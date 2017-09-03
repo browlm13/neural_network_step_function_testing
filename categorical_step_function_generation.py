@@ -156,7 +156,7 @@ write_to_csv(CSV_FNAME, R, C, key)
 given any number, [0,(d-1)], must be able to find the category its in
 
 need to be able to generate test set and training set
-values, and there assosiate category values
+values, and their assosiate category values
 """
 
 
@@ -200,12 +200,14 @@ def create_global_lookup_table():
 	GCD = gcd_list(terminals_1)
 
 	#build, constant time, memory hog, lookup table
-	lookup_table = [DEFAULT_VALUE] * ( int(terminals_2[-1]/GCD) + 1 )
+	#lookup_table = [DEFAULT_VALUE] * ( int(terminals_2[-1]/GCD) + 1 )
+	lookup_table = [DEFAULT_VALUE] * ( int(max(terminals_2)/GCD) + 1 )
+
 	for block in all_blocks:
 		lookup_table[int(block['term_1']/GCD)] = block['category_name']
 
 		low = int(block['term_1']//GCD)
-		high = int( -(-block['term_2'])//GCD) #+ 1
+		high = int( -(-block['term_2'])//GCD) + 1
 
 		#fill slots between terminals
 		n = high - low
@@ -233,7 +235,7 @@ def main(args=None):
 	create_global_lookup_table()
 
 
-	answers = [val_to_category(x) for x in test_data]
+	answers = [C.index(val_to_category(x)) for x in test_data]
 
 	print (test_data)
 	print (answers)
