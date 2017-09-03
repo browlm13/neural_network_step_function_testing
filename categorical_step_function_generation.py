@@ -141,6 +141,9 @@ min_range_size = 1
 
 CSV_FNAME = 'category_ranges.csv'
 
+#settings
+DEFAULT_VALUE = "Other"
+
 R = generate_R(n,a,b,max_range_size,min_range_size)
 C = generate_C(m)
 key = generate_key(n,m)
@@ -172,9 +175,9 @@ def gcd_list(list):
 	return res
 
 #extract all range blocks  from csv{term_1:, term_2:, category_name:}
-def read_range_blocks(CSV_FNAME):
+def read_range_blocks(csv_fname):
 	all_blocks = []
-	with open(CSV_FNAME, mode='r') as infile:
+	with open(csv_fname, mode='r') as infile:
 		reader = csv.reader(infile)
 		for row in reader:
 			block = {}
@@ -190,7 +193,7 @@ def create_global_lookup_table():
 	global lookup_table
 	global CSV_FNAME
 
-	all_blocks = iana_country_blocks(CSV_FNAME)
+	all_blocks = read_range_blocks(CSV_FNAME)
 	terminals_1 = [b['term_1'] for b in all_blocks]
 	terminals_2 = [b['term_2'] for b in all_blocks]
 
@@ -202,7 +205,7 @@ def create_global_lookup_table():
 		lookup_table[int(block['term_1']/GCD)] = block['category_name']
 
 		low = int(block['term_1']//GCD)
-		high = int( -(-block['term_2'])//GCD) + 1
+		high = int( -(-block['term_2'])//GCD) #+ 1
 
 		#fill slots between terminals
 		n = high - low
@@ -221,29 +224,30 @@ lookup_table = []
 GCD = -1
 
 def main(args=None):
+	test_size = 20
 
-	if (len(sys.argv) != 3):	sys.exit()
-	infile = sys.argv[1]
-	outfile = sys.argv[2]
+	#generate random test set [0,(d-1)]
+	test_data = np.random.randint(0,high=d-1,size=20, dtype=np.int64)
 
 	#load lookup table into ram
 	create_global_lookup_table()
 
-	#load ip list
-	ips = read_ip_list(infile)
 
-	#look up start
-	countries = [ip_to_country(ip) for ip in ips]
+	answers = [val_to_category(x) for x in test_data]
 
-	#write ip list
+	print (test_data)
+	print (answers)
+
+	"""
+	#write to list
 	with open(outfile, mode='w+') as f:
-		for i in range(0, len(ips)):
-			f.write("%s,%s\n" % (countries[i], ips[i]))
-
+		for i in range(0, len(test_data)):
+			f.write("%s,%s\n" % (answers[i], test_data[i]))
+	"""
 
 #
 #	run program
 #
 
-#if __name__ == "__main__":
-#	main()
+if __name__ == "__main__":
+	main()
