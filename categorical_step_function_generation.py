@@ -15,6 +15,7 @@
 """
 
 import numpy as np
+import csv
 
 m = 15
 n = 100
@@ -24,6 +25,8 @@ b = 20 		#increase to narrow presision
 
 max_range_size = d/2
 min_range_size = 1
+
+CSV_FNAME = 'category_ranges.csv'
 
 #
 #	generate randomly sized n ranges filling the interval [0,d] exactly
@@ -137,7 +140,7 @@ for i in np.nditer(Z):
 	print (get_range(R,element))
 """
 
-with open('category_ranges.csv', 'w') as f:
+with open(CSV_FNAME, 'w') as f:
 	for i in range(len(key)):
 		for j in range(len(key[i])):
 			range_terminals = get_range(R,key[i][j])
@@ -153,3 +156,94 @@ need to be able to generate test set and training set
 values, and there assosiate category values
 """
 
+
+#return greatest common denominator of two numbers
+def gcd (a,b):
+    if (b == 0):
+        return a
+    else:
+         return gcd (b, a % b)
+
+#return greatest common denominator of a list of numbers
+def gcd_list(list):
+	res = list[0]
+	for c in list[1::]:
+	    res = gcd(res , c)
+	return res
+
+#extract all range blocks  from csv{term_1:, term_2:, category_name:}
+def read_range_blocks(CSV_FNAME):
+	all_blocks = []
+	with open(CSV_FNAME, mode='r') as infile:
+		reader = csv.reader(infile)
+		for row in reader:
+			block = {}
+			block['term_1'] = int(row[0])
+			block['term_2'] = int(row[1])
+			block['category_name'] = row[2]
+			all_blocks.append(block)
+	return all_blocks
+
+#set global GCD and global lookup table
+def create_global_lookup_table():
+	global GCD
+	global lookup_table
+	global CSV_FNAME
+
+	all_blocks = iana_country_blocks(CSV_FNAME)
+	terminals_1 = [b['term_1'] for b in all_blocks]
+	terminals_2 = [b['term_2'] for b in all_blocks]
+
+	GCD = gcd_list(terminals_1)
+
+	#build, constant time, memory hog, lookup table
+	lookup_table = [DEFAULT_VALUE] * ( int(terminals_2[-1]/GCD) + 1 )
+	for block in all_blocks:
+		lookup_table[int(block['term_1']/GCD)] = block['category_name']
+
+		low = int(block['term_1']//GCD)
+		high = int( -(-block['term_2'])//GCD) + 1
+
+		#fill slots between terminals
+		n = high - low
+		for i in range(n):
+			lookup_table[low+(i)] = block['category_name']
+
+def val_to_category(val):
+	global lookup_table
+	global GCD
+
+	return lookup_table[val//GCD]
+
+
+#global for constant time speed up
+lookup_table = []
+GCD = -1
+
+def main(args=None):
+
+	if (len(sys.argv) != 3):	sys.exit()
+	infile = sys.argv[1]
+	outfile = sys.argv[2]
+
+	#load lookup table into ram
+	create_global_lookup_table()
+
+	#load ip list
+	ips = read_ip_list(infile)
+
+	#look up start
+	countries = [ip_to_country(ip) for ip in ips]
+
+	#write ip list
+	with open(outfile, mode='w+') as f:
+		for i in range(0, len(ips)):
+			f.write("%s,%s\n" % (countries[i], ips[i]))
+
+
+#
+#	run program
+#
+
+if __name__ == "__main__":
+	main()
